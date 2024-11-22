@@ -85,13 +85,14 @@ def train(train_loader, network, optimizer, epoch, loss_function, samples_per_cl
 def eval_training(valid_loader, network, loss_function, epoch=0):
     start = time.time()
     network.eval()
-    
+
     n = 0
     valid_loss = 0.0
     correct = 0.0
     class_target = []
     class_predict = []
 
+    # 在 GPU 上收集所有数据，减少频繁的 GPU 到 CPU 转换
     for (images, labels) in valid_loader:
         images, labels = images.to(device), labels.to(device)
 
@@ -102,22 +103,28 @@ def eval_training(valid_loader, network, loss_function, epoch=0):
         _, preds = outputs.max(1)
         correct += preds.eq(labels).sum()
 
-        labels = labels.cpu()
-        preds = preds.cpu()
-
-        class_target.extend(labels.numpy().tolist())
-        class_predict.extend(preds.numpy().tolist())
+        # 收集 GPU 上的张量
+        class_target.append(labels)
+        class_predict.append(preds)
 
         n += 1
 
+    # 在所有数据收集完之后再进行转换到 CPU
+    class_target = torch.cat(class_target).cpu().numpy().tolist()
+    class_predict = torch.cat(class_predict).cpu().numpy().tolist()
+
+    # 打印分类报告
+    report = classification_report(class_target, class_predict, zero_division=0)
     print('Evaluating Network.....')
-    print('Valid set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
+    print('Valid set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed: {:.2f}s'.format(
         epoch,
         valid_loss / n,
         correct.float() / len(valid_loader.dataset),
         time.time() - start
     ))
-    
+    print('Classification Report:')
+    print(report)
+
     return correct.float() / len(valid_loader.dataset), valid_loss / len(valid_loader.dataset), f1_score(class_target, class_predict, average='macro')
 
         

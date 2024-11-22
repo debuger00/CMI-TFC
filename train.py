@@ -201,10 +201,9 @@ if __name__ == '__main__':
     best_weights_path = checkpoint_path_pth.format(net=args.net, type='best')
     # validation_loss = 0
     for epoch in range(1, args.epoch + 1):
-        train_scheduler.step(epoch)
-            
         net = train(train_loader, net, optimizer, epoch, loss_function=loss_function_CE, samples_per_cls=number_train)
         acc, validation_loss, fs_valid = eval_training(valid_loader, net, loss_function_CE, epoch)
+        train_scheduler.step()  # 去掉 epoch 参数，并放到最后调用
 
         #start to save best performance model (according to the accuracy on validation dataset) after learning rate decay to 0.01
         if epoch > settings.MILESTONES[0] and best_acc < acc:

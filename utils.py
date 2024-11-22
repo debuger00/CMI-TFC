@@ -156,8 +156,11 @@ def get_network(args):
         print('the network name you have entered is not supported yet')
         sys.exit()
 
-    if args.gpu: #use_gpu
-        net = net.cuda()
+    if args.gpu and torch.cuda.is_available():
+        net = net.to(torch.device("cuda:0"))
+    else:
+        net = net.to(torch.device("cpu"))
+
 
     return net
 

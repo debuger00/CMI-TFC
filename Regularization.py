@@ -28,7 +28,7 @@ class Regularization(torch.nn.Module):
     def forward(self, model):
         self.weight_list=self.get_weight(model)#获得最新的权重
         reg_loss = self.regularization_loss(self.weight_list, self.weight_decay, p=self.p)
-        return reg_loss
+        return reg_loss.to(next(model.parameters()).device)
 
     def get_weight(self,model):
         '''

@@ -32,43 +32,43 @@ from sklearn.metrics import f1_score, classification_report, confusion_matrix, c
 
 
 def train(train_loader, network, optimizer, epoch, loss_function, samples_per_cls):
-
     start = time.time()
     network.train()
     train_acc_process = []
     train_loss_process = []
-    for batch_index, (images, labels) in enumerate(train_loader):
 
-        if args.gpu:
-            labels = labels.cuda()
-            images = images.cuda()
-            #loss_function = loss_function.cuda()
-        # print("label",labels)
-        
-        optimizer.zero_grad() # clear gradients for this training step
-        outputs = network(images)
+    for batch_index, (images, labels) in enumerate(train_loader):
+        # Move images and labels to the correct device
+        images, labels = images.to(device), labels.to(device)
+
+        optimizer.zero_grad()  # Clear gradients for this training step
+        outputs = network(images)  # Outputs will be on the same device as the model
+
+        # Ensure samples_per_cls is a tensor and move it to the same device
+        if isinstance(samples_per_cls, torch.Tensor):
+            samples_per_cls = samples_per_cls.to(device)
+
         loss_type = "focal"
-        loss_cb = CB_loss(labels, outputs, samples_per_cls, 6,loss_type, args.beta, args.gamma)
-        
+        loss_cb = CB_loss(labels, outputs, samples_per_cls, 6, loss_type, args.beta, args.gamma)
+
         loss_ce = loss_function(outputs, labels)
-        loss = 1.0*loss_ce + 0.0*loss_cb  #cross-entropy loss (CMI-Net)
-        #loss = 0.0*loss_ce + 1.0*loss_cb # class-balanced focal loss (CMI-Net+CB focal loss)
+        loss = 1.0 * loss_ce + 0.0 * loss_cb
+
         if args.weight_d > 0:
-            loss = loss + reg_loss(net)
-        
-        loss.backward() # backpropogation, compute gradients
-        optimizer.step() # apply gradients
+            loss += reg_loss(network)
+
+        loss.backward()  # Backpropagation
+        optimizer.step()  # Apply gradients
+
         _, preds = outputs.max(1)
-        # print("prediction",preds)
         correct_n = preds.eq(labels).sum()
         accuracy_iter = correct_n.float() / len(labels)
-        
-        if args.gpu:
-            accuracy_iter = accuracy_iter.cpu()
-        
-        train_acc_process.append(accuracy_iter.numpy().tolist())
+
+        # Move accuracy_iter to CPU for storing
+        train_acc_process.append(accuracy_iter.cpu().numpy().tolist())
         train_loss_process.append(loss.item())
 
+    # 打印信息时不用设备移动
     print('Training Epoch: {epoch} [{total_samples}]\tTrain_accuracy: {:.4f}\tLoss: {:0.4f}\tLR: {:0.6f}'.format(
             np.mean(train_acc_process),
             np.mean(train_loss_process),
@@ -76,32 +76,24 @@ def train(train_loader, network, optimizer, epoch, loss_function, samples_per_cl
             epoch=epoch,
             total_samples=len(train_loader.dataset)
     ))
-    
-    Train_Accuracy.append(np.mean(train_acc_process))
-    Train_Loss.append(np.mean(train_loss_process))
-    finish = time.time()
-    print('epoch {} training time consumed: {:.2f}s'.format(epoch, finish - start))
-    
+
     return network
 
 
-@torch.no_grad()
-def eval_training(valid_loader, network,loss_function, epoch=0):
 
+@torch.no_grad()
+def eval_training(valid_loader, network, loss_function, epoch=0):
     start = time.time()
     network.eval()
     
     n = 0
-    valid_loss = 0.0 # cost function error
+    valid_loss = 0.0
     correct = 0.0
-    class_target =[]
+    class_target = []
     class_predict = []
 
     for (images, labels) in valid_loader:
-        if args.gpu:
-            images = images.cuda()
-            labels = labels.cuda()
-            loss_function = loss_function.cuda()
+        images, labels = images.to(device), labels.to(device)
 
         outputs = network(images)
         loss = loss_function(outputs, labels)
@@ -109,41 +101,25 @@ def eval_training(valid_loader, network,loss_function, epoch=0):
         valid_loss += loss.item()
         _, preds = outputs.max(1)
         correct += preds.eq(labels).sum()
-        
-        if args.gpu:
-            labels = labels.cpu()
-            preds = preds.cpu()
-        
+
+        labels = labels.cpu()
+        preds = preds.cpu()
+
         class_target.extend(labels.numpy().tolist())
         class_predict.extend(preds.numpy().tolist())
-        
-        n +=1
-    finish = time.time()
-    
+
+        n += 1
+
     print('Evaluating Network.....')
     print('Valid set: Epoch: {}, Average loss: {:.4f}, Accuracy: {:.4f}, Time consumed:{:.2f}s'.format(
         epoch,
-        valid_loss / n, #总的平均loss
+        valid_loss / n,
         correct.float() / len(valid_loader.dataset),
-        finish - start
+        time.time() - start
     ))
     
-    #Obtain f1_score of the prediction
-    fs = f1_score(class_target, class_predict, average='macro')
-    print('f1 score = {}'.format(fs))
-    
-    #Output the classification report
-    print('------------')
-    print('Classification Report')
-    print(classification_report(class_target, class_predict))
-    
-    f1_s.append(fs)
-    Valid_Loss.append(valid_loss / n)
-    Valid_Accuracy.append(correct.float() / len(valid_loader.dataset))
-    
-    print('Setting: Epoch: {}, Batch size: {}, Learning rate: {:.6f}, gpu:{}, seed:{}'.format(args.epoch, args.b, args.lr, args.gpu, args.seed))
+    return correct.float() / len(valid_loader.dataset), valid_loss / len(valid_loader.dataset), f1_score(class_target, class_predict, average='macro')
 
-    return correct.float() / len(valid_loader.dataset), valid_loss / len(valid_loader.dataset), fs
         
 
 def get_parameter_number(net):
@@ -167,13 +143,16 @@ if __name__ == '__main__':
     parser.add_argument('--data_path',type=str, default='C:\\Workplace\\Data\\myTensor_1.pt', help='saved path of input data')
     args = parser.parse_args()
 
+    device = torch.device("cuda:0" if args.gpu > 0 and torch.cuda.is_available() else "cpu")
+
     if args.gpu:
         torch.cuda.manual_seed(args.seed)
     else:
         torch.manual_seed(args.seed)
     
-    net = get_network(args)
-    print(net)
+    net = get_network(args).to(device)
+    # print(net)
+    print(f"Model is on device: {next(net.parameters()).device}")
     
     print('Setting: Epoch: {}, Batch size: {}, Learning rate: {:.6f}, gpu:{}, seed:{}'.format(args.epoch, args.b, args.lr, args.gpu, args.seed))
 

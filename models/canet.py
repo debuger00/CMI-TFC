@@ -66,8 +66,8 @@ class CaNet(nn.Module):
     
         return output
 
-class BasicBlock_b(nn.Module):
-    def __init__(self, in_channels, out_channels):
+class BasicBlock_b(nn.Module):                         ##论文中的Res-LCB 模块。 
+    def __init__(self, in_channels, out_channels): 
         super().__init__()
 
         #residual function
@@ -122,7 +122,7 @@ class BasicBlock(nn.Module):
 
 
 #cross attention by channel-wise
-class Feature_map_att(nn.Module):
+class Feature_map_att(nn.Module):                        # CMIM 模型
     def __init__(self, input_channel=1, middle_channel=16): #dim_acc, dim_gyr= 64
         super().__init__()
         

@@ -8,6 +8,7 @@ Created on Fri May  7 11:37:49 2021
 """Pytorch implementation of Class-Balanced-Loss
    Reference: "Class-Balanced Loss Based on Effective Number of Samples" 
    Authors: Yin Cui and
+   
                Menglin Jia and
                Tsung Yi Lin and
                Yang Song and

@@ -138,7 +138,7 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--net', type=str, default='canet', help='net type')
-    parser.add_argument('--gpu', type = int, default=0, help='use gpu or not')
+    parser.add_argument('--gpu', type = int, default=1, help='use gpu or not')
     parser.add_argument('--b', type=int, default=256, help='batch size for dataloader')
     parser.add_argument('--lr', type=float, default=0.0001, help='initial learning rate')
     parser.add_argument('--epoch',type=int, default=100, help='total training epoches')
@@ -147,15 +147,15 @@ if __name__ == '__main__':
     parser.add_argument('--beta',type=float, default=0.9999, help='the beta of class balanced loss')
     parser.add_argument('--weight_d',type=float, default=0.1, help='weight decay for regularization')
     parser.add_argument('--save_path',type=str, default='setting0', help='saved path of each setting')
-    parser.add_argument('--data_path',type=str, default='C:\\Workplace\\Data\\myTensor_1.pt', help='saved path of input data')
+    parser.add_argument('--data_path',type=str, default='E:\\program\\aaa_DL_project\\CMI-Net\\data\\myTensor_1.pt', help='saved path of input data')
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if args.gpu > 0 and torch.cuda.is_available() else "cpu")
 
     if args.gpu:
-        torch.cuda.manual_seed(args.seed)
+        torch.cuda.manual_seed(args.seed)# 设置 GPU 上的随机数种子，确保在 GPU 上的随机操作（如权重初始化等）也是可重复的
     else:
-        torch.manual_seed(args.seed)
+        torch.manual_seed(args.seed)#  设置 CPU 上的随机数种子，确保在 CPU 上执行的所有与随机性相关的操作都是可重复的
     
     net = get_network(args).to(device)
     # print(net)

@@ -138,14 +138,14 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--net', type=str, default='canet', help='net type')
-    parser.add_argument('--gpu', type = int, default=1, help='use gpu or not')
+    parser.add_argument('--gpu', type = int, default=1, help='use gpu or not')  # 选择是否使用 GPU（1 表示使用 GPU，0 表示使用 CPU）。
     parser.add_argument('--b', type=int, default=256, help='batch size for dataloader')
     parser.add_argument('--lr', type=float, default=0.0001, help='initial learning rate')
     parser.add_argument('--epoch',type=int, default=100, help='total training epoches')
     parser.add_argument('--seed',type=int, default=10, help='seed')
     parser.add_argument('--gamma',type=float, default=0, help='the gamma of focal loss')
     parser.add_argument('--beta',type=float, default=0.9999, help='the beta of class balanced loss')
-    parser.add_argument('--weight_d',type=float, default=0.1, help='weight decay for regularization')
+    parser.add_argument('--weight_d',type=float, default=0.1, help='weight decay for regularization')  # 权重衰减 系数 
     parser.add_argument('--save_path',type=str, default='setting0', help='saved path of each setting')
     parser.add_argument('--data_path',type=str, default='E:\\program\\aaa_DL_project\\CMI-Net\\data\\myTensor_1.pt', help='saved path of input data')
     args = parser.parse_args()
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     else:
         torch.manual_seed(args.seed)#  设置 CPU 上的随机数种子，确保在 CPU 上执行的所有与随机性相关的操作都是可重复的
     
-    net = get_network(args).to(device)
+    net = get_network(args).to(device)   # get_network 在 utils.py  中 ，把模型搬运到GPU中
     # print(net)
     print(f"Model is on device: {next(net.parameters()).device}")
     
@@ -167,9 +167,9 @@ if __name__ == '__main__':
     if(sysstr =="Windows"):
         num_workers = 0
     else:
-        num_workers = 8
+        num_workers = 8                        # 在windows上的进程是0， 在Linux的是8？ 在Windows 在多进程的数据加载时可能会遇到问题？？？？
         
-    pathway = args.data_path
+    pathway = args.data_path                     # 默认Linux的问题
     if sysstr=='Linux': 
         pathway = args.data_path
     
@@ -184,17 +184,17 @@ if __name__ == '__main__':
     
     # loss_function = nn.CrossEntropyLoss(weight=weight_train)
     loss_function_CE = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    train_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr) # 使用 Adam 优化器来训练模型，并指定学习率 args.lr
+    train_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)    #  创建一个学习率调度器 StepLR，每 20 个 epoch 调整学习率，缩小比例 gamma=0.1
 
     checkpoint_path = os.path.join(settings.CHECKPOINT_PATH, args.net, args.save_path, settings.TIME_NOW)
 
     #use tensorboard
-    if not os.path.exists(settings.LOG_DIR):
+    if not os.path.exists(settings.LOG_DIR):               # 如果没 log 路径 创建log路径
         os.mkdir(settings.LOG_DIR)
 
     #create checkpoint folder to save model
-    if not os.path.exists(checkpoint_path):
+    if not os.path.exists(checkpoint_path):                  # 参数路径
         os.makedirs(checkpoint_path)
     checkpoint_path_pth = os.path.join(checkpoint_path, '{net}-{type}.pth')
 
@@ -206,6 +206,8 @@ if __name__ == '__main__':
     f1_s = []
     best_epoch = 1
     best_weights_path = checkpoint_path_pth.format(net=args.net, type='best')
+   
+   
     # validation_loss = 0
     for epoch in range(1, args.epoch + 1):
         net = train(train_loader, net, optimizer, epoch, loss_function=loss_function_CE, samples_per_cls=number_train)
@@ -218,7 +220,8 @@ if __name__ == '__main__':
             best_epoch = epoch
             torch.save(net.state_dict(), best_weights_path)
     print('best epoch is {}'.format(best_epoch))
-            
+
+
     #plot accuracy varying over time
     font_1 = {'weight' : 'normal', 'size'   : 20}
     fig1=plt.figure(figsize=(12,9))
@@ -285,7 +288,7 @@ if __name__ == '__main__':
     print('Validation accuracy: {}'.format(Valid_Accuracy), file=f)
     print('Validation F1-score: {}'.format(f1_s), file=f)
     
-    ######load the best trained model and test testing data
+    ######load the best trained model and test testing data  ，测试函数，推理
     best_net = get_network(args)
     best_net.load_state_dict(torch.load(best_weights_path))
     

@@ -174,11 +174,10 @@ def get_mydataloader(pathway, data_id = 1, batch_size=16, num_workers=2, shuffle
 
 def get_weighted_mydataloader(pathway, data_id = 1, batch_size=16, num_workers=2, shuffle=True):
     Mydataset = My_Dataset(pathway, data_id, transform=None)
-    all_labels = [label for data, label in Mydataset]
-    number = np.unique(all_labels, return_counts = True)[1]
+    all_labels = [label for data, label in Mydataset] 
+    number = np.unique(all_labels, return_counts = True)[1] # 使用 np.unique 计算每个标签的样本数量，并生成权重。权重是每个标签样本数的倒数。
     weight = 1./ torch.from_numpy(number).float()
     # print(weight)
-    weight = torch.softmax(weight,dim=0)
+    weight = torch.softmax(weight,dim=0) # 对上述  权重应用 softmax 操作，使得所有权重的和为 1，这样可以更好地进行权重调整。
     Data_loader = DataLoader(Mydataset, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
-    
     return Data_loader, weight, number

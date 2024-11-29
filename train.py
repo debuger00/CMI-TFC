@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta',type=float, default=0.9999, help='the beta of class balanced loss')
     parser.add_argument('--weight_d',type=float, default=0.1, help='weight decay for regularization')  # 权重衰减 系数 
     parser.add_argument('--save_path',type=str, default='setting0', help='saved path of each setting')
-    parser.add_argument('--data_path',type=str, default='E:\\program\\aaa_DL_project\\CMI-Net\\data\\myTensor_1.pt', help='saved path of input data')
+    parser.add_argument('--data_path',type=str, default='/opt/data/private/CMI-TFC/CMI-TFC/data/myTensor_1.pt', help='saved path of input data')
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if args.gpu > 0 and torch.cuda.is_available() else "cpu")
@@ -200,7 +200,7 @@ if __name__ == '__main__':
 
     best_acc = 0.0
     Train_Loss = []
-    Train_Accuracy = []
+    Train_Accuracy = []  #  每一轮训练的 测试集
     Valid_Loss = []
     Valid_Accuracy = []
     f1_s = []
@@ -223,7 +223,7 @@ if __name__ == '__main__':
 
 
     #plot accuracy varying over time
-    font_1 = {'weight' : 'normal', 'size'   : 20}
+    font_1 = {'weight' : 'normal', 'size'   : 20}  # 字体样式设置: ; "weight" 代表字体粗细，"size" 代表字体大小 
     fig1=plt.figure(figsize=(12,9))
     plt.title('Accuracy',font_1)
     index_train = list(range(1,len(Train_Accuracy)+1))

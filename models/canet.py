@@ -13,7 +13,7 @@ class CaNet(nn.Module):
     def __init__(self, num_classes=6):
         super().__init__()
         
-        self.conv1 = BasicBlock_b(in_channels=1, out_channels=8)
+        self.conv1 = BasicBlock_b(in_channels=1, out_channels=8) # 这些块分别处理加速度计和陀螺仪数据（xa 和 xg），通过多个层来独立提取特征
         self.conv2 = BasicBlock_b(in_channels=8, out_channels=16)
         self.conv3 = BasicBlock_b(in_channels=16, out_channels=32)
         self.conv4 = BasicBlock_b(in_channels=32, out_channels=64)

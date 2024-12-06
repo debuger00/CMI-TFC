@@ -137,7 +137,7 @@ def get_parameter_number(net):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--net', type=str, default='canet', help='net type')
+    parser.add_argument('--net', type=str, default='CaNet-TFC', help='net type')
     parser.add_argument('--gpu', type = int, default=1, help='use gpu or not')  # 选择是否使用 GPU（1 表示使用 GPU，0 表示使用 CPU）。
     parser.add_argument('--b', type=int, default=256, help='batch size for dataloader')
     parser.add_argument('--lr', type=float, default=0.0001, help='initial learning rate')
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta',type=float, default=0.9999, help='the beta of class balanced loss')
     parser.add_argument('--weight_d',type=float, default=0.1, help='weight decay for regularization')  # 权重衰减 系数 
     parser.add_argument('--save_path',type=str, default='setting0', help='saved path of each setting')
-    parser.add_argument('--data_path',type=str, default='/opt/data/private/CMI-TFC/CMI-TFC/data/myTensor_1.pt', help='saved path of input data')
+    parser.add_argument('--data_path',type=str, default='/opt/data/private/CMI-TFC/data/myTensor_1.pt', help='saved path of input data')
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if args.gpu > 0 and torch.cuda.is_available() else "cpu")

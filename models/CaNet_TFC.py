@@ -1,9 +1,21 @@
 import torch.nn as nn
 import torch
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+
+
+class Config:
+    def __init__(self):
+        # 时间序列对齐后的长度 (输入的序列长度)
+        self.TSlength_aligned = 200  # 根据数据集中的时间序列长度设置
+        self.dim_feedforward = 400  # Transformer 编码器中的前馈网络隐藏层大小
+        self.num_heads = 2  # Transformer 编码器的多头注意力头数
+        self.num_layers = 2  # Transformer 编码器的层数
+        self.num_features = 6  # 每个时间步的特征维度
+        #self.num_classes = 6  # 分类任务的类别数
 
 
 class CaNet_TFC(nn.Module):
-    def __init__(self, configs, num_classes=6):
+    def __init__(self, configs=Config(), num_classes=6):
         super().__init__()
         
         # 使用 TFC 中的 Transformer 编码器来替换原有的卷积块
@@ -14,14 +26,14 @@ class CaNet_TFC(nn.Module):
         
         # 替换后的 projection 层，用于对时间域和频率域特征进行降维
         self.projector_t = nn.Sequential(
-            nn.Linear(configs.TSlength_aligned, 256),
+            nn.Linear(configs.TSlength_aligned * configs.num_features, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Linear(256, 64)  # 降维到 64 以匹配后续的 concat 操作
         )
 
         self.projector_f = nn.Sequential(
-            nn.Linear(configs.TSlength_aligned, 256),
+            nn.Linear(configs.TSlength_aligned * configs.num_features, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Linear(256, 64)
@@ -32,11 +44,11 @@ class CaNet_TFC(nn.Module):
         self.fc = nn.Linear(128, num_classes)
 
     def forward(self, x):
-        xa = x[:,:,:,0:3]
-        xg = x[:,:,:,3:6]
+        xa = x[:, :, :, 0:3]
+        xg = x[:, :, :, 3:6]
         
-        xa = xa.permute(0, 1, 3, 2)  # 重排维度以适配 Transformer
-        xg = xg.permute(0, 1, 3, 2)
+        xa = xa.permute(0, 2, 3, 1)  # 重排维度以适配 Transformer，变为 [batch_size, sequence_length, num_features]
+        xg = xg.permute(0, 2, 3, 1)
         
         # 使用 TFC 的 Transformer 编码器进行特征提取
         xa_encoded = self.tfc_encoder_t(xa)
@@ -114,13 +126,13 @@ class TFC(nn.Module):
     def __init__(self, configs):
         super(TFC, self).__init__()
 
-        encoder_layers_t = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=2, )
-        self.transformer_encoder_t = TransformerEncoder(encoder_layers_t, 2)
+        encoder_layers_t = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=configs.num_heads)
+        self.transformer_encoder_t = TransformerEncoder(encoder_layers_t, configs.num_layers)
 
-        encoder_layers_f = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=2, )
-        self.transformer_encoder_f = TransformerEncoder(encoder_layers_f, 2)
+        encoder_layers_f = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=configs.num_heads)
+        self.transformer_encoder_f = TransformerEncoder(encoder_layers_f, configs.num_layers)
 
 
 # 通过调用这个函数来创建新的 CaNet_TFC 模型
-def canet_tfc(configs):
-    return CaNet_TFC(configs)
+def canet_tfc():
+    return CaNet_TFC()

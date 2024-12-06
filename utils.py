@@ -19,6 +19,9 @@ def get_network(args):
     if args.net == 'vgg16':
         from models.vgg import vgg16_bn
         net = vgg16_bn()
+    elif args.net == 'CaNet-TFC':
+        from models.CaNet_TFC import canet_tfc
+        net = canet_tfc()
     elif args.net == 'vgg13':
         from models.vgg import vgg13_bn
         net = vgg13_bn()

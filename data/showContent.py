@@ -9,16 +9,19 @@ if isinstance(data, list):
     for i, item in enumerate(data):
         if isinstance(item, torch.Tensor):
             print(f"元素 {i}: 形状为 {item.shape}")
+            print(f"元素 {i}: 内容为（前 100 行）：\n{item[:100]}")  # 打印前100行数据
         else:
             print(f"元素 {i}: 类型为 {type(item)}，不是张量")
 else:
     # 如果不是列表，可能是张量或字典
     if isinstance(data, torch.Tensor):
         print(f"张量的形状为: {data.shape}")
+        print(f"张量的内容为（前 100 行）：\n{data[:100]}")  # 打印前100行数据
     elif isinstance(data, dict):
         for key, value in data.items():
             if isinstance(value, torch.Tensor):
                 print(f"{key}: {value.shape}")
+                print(f"{key} 的内容为（前 100 行）：\n{value[:100]}")  # 打印字典中张量的前 100 行
             else:
                 print(f"{key}: (不是张量类型的数据)")
 

@@ -25,19 +25,33 @@ class CaNet_TFC(nn.Module):
         self.CA_C_s = BasicBlock()
         
         # 替换后的 projection 层，用于对时间域和频率域特征进行降维
-        self.projector_t = nn.Sequential(
-            nn.Linear(configs.TSlength_aligned * configs.num_features, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Linear(256, 64)  # 降维到 64 以匹配后续的 concat 操作
-        )
+        # self.projector_t = nn.Sequential(
+        #     nn.Linear(configs.TSlength_aligned * configs.num_features, 256),
+        #     nn.BatchNorm1d(256),
+        #     nn.ReLU(),
+        #     nn.Linear(256, 64)  # 降维到 64 以匹配后续的 concat 操作
+        # )
 
-        self.projector_f = nn.Sequential(
-            nn.Linear(configs.TSlength_aligned * configs.num_features, 256),
+        # self.projector_f = nn.Sequential(
+        #     nn.Linear(configs.TSlength_aligned * configs.num_features, 256),
+        #     nn.BatchNorm1d(256),
+        #     nn.ReLU(),
+        #     nn.Linear(256, 64)
+        # )
+        self.projector_t = nn.Sequential(
+            nn.Linear(configs.TSlength_aligned * 3, 256),  # 200 * 3 = 600
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Linear(256, 64)
         )
+
+        self.projector_f = nn.Sequential(
+            nn.Linear(configs.TSlength_aligned * 3, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Linear(256, 64)
+)
+
 
         # Fully connected layer for final classification
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
@@ -47,8 +61,12 @@ class CaNet_TFC(nn.Module):
         xa = x[:, :, :, 0:3]
         xg = x[:, :, :, 3:6]
         
-        xa = xa.permute(0, 2, 3, 1)  # 重排维度以适配 Transformer，变为 [batch_size, sequence_length, num_features]
-        xg = xg.permute(0, 2, 3, 1)
+        # 去掉多余的通道维度
+        xa = xa.squeeze(1)  # 形状变为 [B, L, 3]
+        xg = xg.squeeze(1)  # 形状变为 [B, L, 3]
+
+        # xa = xa.permute(0, 2, 3, 1)  # 重排维度以适配 Transformer，变为 [batch_size, sequence_length, num_features]
+        # xg = xg.permute(0, 2, 3, 1)
         
         # 使用 TFC 的 Transformer 编码器进行特征提取
         xa_encoded = self.tfc_encoder_t(xa)
@@ -126,10 +144,25 @@ class TFC(nn.Module):
     def __init__(self, configs):
         super(TFC, self).__init__()
 
-        encoder_layers_t = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=configs.num_heads)
+        # encoder_layers_t = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=configs.num_heads)
+        # self.transformer_encoder_t = TransformerEncoder(encoder_layers_t, configs.num_layers)
+
+        # encoder_layers_f = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=configs.num_heads)
+        # self.transformer_encoder_f = TransformerEncoder(encoder_layers_f, configs.num_layers)
+        encoder_layers_t = TransformerEncoderLayer(
+            d_model=3,   # 特征维度为3，因为xa是[B,200,3]
+            dim_feedforward=6,  # 一般是2-4倍d_model，可以根据需要调整，这里用2*3=6
+            nhead=1,
+            batch_first=True
+        )
         self.transformer_encoder_t = TransformerEncoder(encoder_layers_t, configs.num_layers)
 
-        encoder_layers_f = TransformerEncoderLayer(configs.TSlength_aligned, dim_feedforward=2 * configs.TSlength_aligned, nhead=configs.num_heads)
+        encoder_layers_f = TransformerEncoderLayer(
+            d_model=3, 
+            dim_feedforward=6, 
+            nhead=1,
+            batch_first=True
+        )
         self.transformer_encoder_f = TransformerEncoder(encoder_layers_f, configs.num_layers)
 
 

@@ -34,7 +34,7 @@ class CaNet(nn.Module):
         self.fc = nn.Linear(128, num_classes)
 
     def forward(self, x):
-        xa = x[:,:,:,0:3]
+        xa = x[:,:,:,0:3] # 最后一个维度是通道
         xg = x[:,:,:,3:6]
         
         xa = xa.permute(0,1,3,2)
